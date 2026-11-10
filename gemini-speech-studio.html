@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="data:," />
+    <title>Gemini Speech Studio</title>
+    <style>
+      :root{
+        --bg:#ffffff; --surface:#f8f9fa; --surface2:#eef1f4; --card:#ffffff;
+        --line:#dfe3e7; --line2:#c9ced4;
+        --text:#1f1f1f; --sub:#5f6368; --faint:#80868b;
+        --accent:#0b57d0; --accent-bg:#e8f0fe; --accent-text:#0b57d0;
+        --ok:#137333; --ok-bg:#e6f4ea; --bad:#b3261e; --bad-bg:#fce8e6;
+        --warn:#b06000; --warn-bg:#fef7e0;
+        --sp1:#1a73e8; --sp2:#e8710a;
+        --radius:16px;
+      }
+      *{ box-sizing:border-box; }
+      html{ -webkit-text-size-adjust:100%; }
+      body{
+        margin:0; background:var(--bg); color:var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+        font-size:16px; line-height:1.55;
+      }
+      .wrap{ max-width:920px; margin:0 auto; padding:14px 14px 40px; }
+      button{ font:inherit; cursor:pointer; }
+      input, select, textarea{ font:inherit; color:var(--text); }
+      a{ color:var(--accent); }
+
+      /* ---------- top tabs ---------- */
+      .tabs{ display:flex; gap:6px; background:var(--surface2); border-radius:999px; padding:4px; margin:4px 0 10px; position:sticky; top:8px; z-index:20; box-shadow:0 2px 10px rgba(0,0,0,.08); }
+      .tabs button{
+        flex:1; border:0; background:transparent; color:var(--sub);
+        padding:9px 4px; border-radius:999px; font-weight:600; font-size:15px;
+      }
+      .tabs button.on{ background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.18); }
+      .keybar{
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+        background:var(--surface); border:1px solid var(--line); border-radius:12px;
+        padding:8px 12px; font-size:14px; color:var(--sub); margin-bottom:14px;
+      }
+      .keybar b{ color:var(--text); }
+      .keybar .dot{ width:9px; height:9px; border-radius:50%; background:var(--faint); flex:none; }
+      .keybar .dot.ok{ background:var(--ok); }
+      .keybar .dot.bad{ background:var(--bad); }
+      .keybar button{ margin-left:auto; border:1px solid var(--line2); background:#fff; border-radius:999px; padding:5px 14px; font-size:14px; font-weight:600; }
+
+      h1{ font-size:clamp(26px,6vw,40px); font-weight:400; line-height:1.25; margin:10px 0 4px; letter-spacing:-.01em; }
+      .lede{ color:var(--sub); margin:0 0 18px; font-size:15px; }
+      h2.sec{ font-size:17px; font-weight:600; margin:22px 0 10px; display:flex; align-items:baseline; gap:8px; }
+      h2.sec small{ color:var(--faint); font-weight:400; font-size:13px; }
+
+      /* ---------- explore cards ---------- */
+      .cards{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      @media (max-width:560px){ .cards{ grid-template-columns:1fr 1fr; } }
+      .xcard{
+        border:1px solid var(--line); border-radius:var(--radius); background:var(--card);
+        padding:16px; text-align:left; min-height:118px; display:flex; flex-direction:column; gap:6px;
+      }
+      .xcard:active{ background:var(--surface); }
+      .xcard .ic{ width:40px; height:40px; border-radius:12px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--sub); }
+      .xcard .t{ font-weight:600; font-size:16px; }
+      .xcard .d{ color:var(--sub); font-size:13.5px; line-height:1.45; }
+      .xcard.dashed{ border:1.5px dashed var(--line2); align-items:center; justify-content:center; text-align:center; }
+      .xcard.dashed .ic{ border-radius:50%; background:var(--surface); font-size:22px; }
+
+      /* ---------- speech blocks ---------- */
+      .block{
+        border:1px solid var(--line); border-radius:20px; background:var(--card);
+        padding:12px; margin-bottom:12px;
+      }
+      .block-head{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+      .spbtn{
+        display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
+        background:#fff; border-radius:999px; padding:8px 14px; font-weight:600; font-size:15px;
+      }
+      .spbtn .sdot{ width:10px; height:10px; border-radius:50%; flex:none; }
+      .spbtn .chev{ color:var(--faint); font-size:12px; }
+      .stylesel{
+        border:1px solid var(--line); background:#fff; border-radius:999px;
+        padding:8px 10px; font-size:14.5px; max-width:46%;
+      }
+      .block-tools{ display:flex; gap:8px; align-items:center; margin-left:auto; }
+      .toolbtn{
+        border:1px solid var(--line); background:#fff; border-radius:999px;
+        padding:7px 12px; font-size:14px; color:var(--text); white-space:nowrap;
+      }
+      .iconbtn{
+        width:38px; height:38px; border-radius:50%; border:1px solid var(--line);
+        background:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:16px; flex:none;
+      }
+      .iconbtn.plain{ border-color:transparent; color:var(--sub); }
+      .tagmenu{ display:none; flex-wrap:wrap; gap:6px; margin-top:10px; }
+      .tagmenu.open{ display:flex; }
+      .tagchip{
+        border:1px solid var(--line2); background:var(--surface); border-radius:8px;
+        padding:5px 10px; font-size:14px; font-family:ui-monospace, Menlo, monospace;
+      }
+      .block textarea{
+        width:100%; border:0; resize:vertical; min-height:96px; padding:10px 2px 2px;
+        font-size:16.5px; line-height:1.6; background:transparent; outline:none;
+      }
+      .block textarea::placeholder{ color:var(--faint); }
+      .block-foot{ display:flex; justify-content:space-between; align-items:center; color:var(--faint); font-size:13px; }
+      .addblock{
+        width:100%; border:0; background:transparent; color:var(--text);
+        padding:14px; font-size:16px; font-weight:500; border-radius:14px;
+      }
+      .addblock:active{ background:var(--surface); }
+
+      /* ---------- settings / model card ---------- */
+      .panel{ border:1px solid var(--line); border-radius:20px; padding:16px; background:var(--card); margin-top:18px; }
+      .panel h3{ margin:0 0 10px; font-size:16px; font-weight:600; }
+      .modelcard{ border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--surface); }
+      .modelcard .mn{ font-size:17px; font-weight:600; }
+      .modelcard .mid{ color:var(--sub); font-size:14px; font-family:ui-monospace, Menlo, monospace; }
+      .modelcard .md{ color:var(--sub); font-size:14px; margin-top:6px; }
+      .temprow{ display:flex; align-items:center; gap:12px; margin-top:6px; }
+      .temprow input[type=range]{ flex:1; accent-color:#5f6368; height:32px; }
+      .temprow input[type=number]{ width:64px; border:1px solid var(--line); border-radius:10px; padding:7px 8px; text-align:center; }
+      .spkrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+      .spkcard{
+        flex:1 1 200px; border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:var(--surface);
+        text-align:left; display:block; width:100%;
+      }
+      .spkcard .vn{ font-weight:600; font-size:16px; display:flex; justify-content:space-between; gap:8px; }
+      .spkcard .vn span{ color:var(--faint); font-weight:400; font-size:13.5px; }
+      .spkcard .vd{ color:var(--sub); font-size:13.5px; margin-top:2px; }
+
+      /* ---------- run bar / result ---------- */
+      .runbar{
+        position:sticky; bottom:10px; margin-top:18px; display:flex; gap:10px; align-items:center;
+        background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+        border:1px solid var(--line); border-radius:999px; padding:8px 8px 8px 16px;
+        box-shadow:0 4px 18px rgba(0,0,0,.10); z-index:5;
+      }
+      .runbar .chars{ color:var(--sub); font-size:13.5px; }
+      .runbtn{
+        margin-left:auto; border:0; background:var(--surface2); color:var(--text);
+        border-radius:999px; padding:12px 30px; font-size:16px; font-weight:600;
+      }
+      .runbtn.go{ background:var(--accent); color:#fff; }
+      .runbtn[disabled]{ opacity:.55; }
+      .status{ margin-top:12px; font-size:14.5px; border-radius:12px; padding:10px 14px; display:none; }
+      .status.show{ display:block; }
+      .status.info{ background:var(--accent-bg); color:var(--accent-text); }
+      .status.err{ background:var(--bad-bg); color:var(--bad); }
+      .status.ok{ background:var(--ok-bg); color:var(--ok); }
+      .result{ margin-top:14px; border:1px solid var(--line); border-radius:16px; padding:14px; display:none; }
+      .result.show{ display:block; }
+      .result audio, .hist audio{ width:100%; margin:6px 0; }
+      .dlbtn{
+        display:inline-block; border:1px solid var(--accent); color:var(--accent); background:#fff;
+        border-radius:999px; padding:8px 18px; font-weight:600; text-decoration:none; font-size:14.5px;
+      }
+      .hist{ margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
+      .hist .hitem{ padding:8px 0; border-bottom:1px solid var(--surface2); }
+      .hist .hitem:last-child{ border-bottom:0; }
+      .hist .ht{ font-size:13.5px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+      /* ---------- voices ---------- */
+      .searchrow{ display:flex; gap:8px; margin:6px 0 10px; }
+      .searchbox{
+        flex:1; display:flex; align-items:center; gap:8px; border:1px solid var(--line);
+        border-radius:999px; padding:0 16px; background:#fff;
+      }
+      .searchbox input{ flex:1; border:0; outline:none; padding:11px 0; font-size:15.5px; background:transparent; min-width:0; }
+      .newvoicebtn{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:0 16px; font-weight:600; white-space:nowrap; }
+      .filters{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+      .filters select{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:8px 10px; font-size:14.5px; }
+      .targetrow{ display:flex; gap:8px; align-items:center; margin:10px 0 2px; font-size:14.5px; color:var(--sub); flex-wrap:wrap; }
+      .targetrow .tg{ border:1px solid var(--line2); background:#fff; border-radius:999px; padding:6px 14px; font-weight:600; color:var(--text); }
+      .targetrow .tg.on1{ background:var(--sp1); border-color:var(--sp1); color:#fff; }
+      .targetrow .tg.on2{ background:var(--sp2); border-color:var(--sp2); color:#fff; }
+      .vgroup{ margin-top:18px; }
+      .vgroup-head{ display:flex; justify-content:space-between; align-items:baseline; }
+      .vgroup-head h3{ margin:0; font-size:16.5px; font-weight:600; }
+      .vgroup-head span{ color:var(--sub); font-size:13.5px; }
+      .vrow{
+        display:flex; align-items:center; gap:10px; padding:11px 2px;
+        border-bottom:1px solid var(--surface2); cursor:pointer;
+      }
+      .vrow:last-child{ border-bottom:0; }
+      .vrow .vinfo{ flex:1; min-width:0; }
+      .vrow .vname{ font-weight:600; font-size:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+      .vrow .vdesc{ color:var(--sub); font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .vrow .play{
+        width:40px; height:40px; border-radius:50%; border:1px solid var(--line2); background:#fff; flex:none;
+        display:inline-flex; align-items:center; justify-content:center; font-size:14px;
+      }
+      .badge{ font-size:11.5px; font-weight:700; border-radius:999px; padding:2px 8px; background:var(--accent-bg); color:var(--accent-text); }
+      .badge.s1{ background:#e8f0fe; color:#0b57d0; } .badge.s2{ background:#feefe3; color:#b06000; }
+      .currentvoice{ border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:var(--surface); display:flex; align-items:center; gap:10px; }
+      .currentvoice .cv-t{ font-size:13px; color:var(--sub); }
+      .currentvoice .cv-n{ font-weight:600; font-size:17px; }
+      .empty{ color:var(--faint); font-size:14.5px; padding:12px 2px; }
+
+      /* ---------- forms / keys ---------- */
+      .field{ margin-bottom:14px; }
+      .field label{ display:block; font-weight:600; font-size:14.5px; margin-bottom:6px; }
+      .field input[type=text], .field textarea{
+        width:100%; border:1px solid var(--line2); border-radius:12px; padding:11px 12px; background:#fff; outline:none;
+      }
+      .field textarea{ resize:vertical; }
+      .field .hint{ color:var(--sub); font-size:13px; margin-top:5px; }
+      .primarybtn{
+        border:0; background:var(--accent); color:#fff; border-radius:999px;
+        padding:12px 26px; font-weight:600; font-size:15.5px;
+      }
+      .primarybtn[disabled]{ opacity:.55; }
+      .ghostbtn{ border:1px solid var(--line2); background:#fff; border-radius:999px; padding:9px 18px; font-weight:600; font-size:14.5px; }
+      .keyrow{
+        border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px; background:#fff;
+      }
+      .keyrow.active{ border-color:var(--accent); background:#f6faff; }
+      .keyrow .kmask{ font-family:ui-monospace, Menlo, monospace; font-size:15px; font-weight:600; word-break:break-all; }
+      .keyrow .kmeta{ color:var(--sub); font-size:13px; margin-top:3px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+      .kstat{ font-size:12px; font-weight:700; border-radius:999px; padding:2px 9px; background:var(--surface2); color:var(--sub); }
+      .kstat.ok{ background:var(--ok-bg); color:var(--ok); }
+      .kstat.quota{ background:var(--warn-bg); color:var(--warn); }
+      .kstat.bad{ background:var(--bad-bg); color:var(--bad); }
+      .keyrow .kactions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+      .keyrow .kactions button{ border:1px solid var(--line2); background:#fff; border-radius:999px; padding:6px 14px; font-size:13.5px; font-weight:600; }
+      .keyrow .kactions button.use{ border-color:var(--accent); color:var(--accent); }
+      .keyrow .kactions button.del{ color:var(--bad); border-color:#f0c6c2; }
+      .note{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:13.5px; color:var(--sub); margin-top:12px; }
+
+      .toast{
+        position:fixed; left:50%; transform:translateX(-50%) translateY(20px); bottom:22px; z-index:50;
+        background:#202124; color:#fff; padding:11px 18px; border-radius:999px; font-size:14.5px;
+        opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:92vw; text-align:center;
+        box-shadow:0 6px 24px rgba(0,0,0,.3);
+      }
+      .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+      .view{ display:none; } .view.on{ display:block; }
+      .spin{ display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:sp 0.8s linear infinite; vertical-align:-2px; margin-right:6px; }
+      @keyframes sp{ to{ transform:rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce){ .spin{ animation:none; } .toast{ transition:none; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <nav class="tabs" role="tablist">
+        <button id="tab-studio" class="on" onclick="showView('studio')">စတူဒီယို</button>
+        <button id="tab-voices" onclick="showView('voices')">အသံများ</button>
+        <button id="tab-newvoice" onclick="showView('newvoice')">အသံအသစ်</button>
+        <button id="tab-keys" onclick="showView('keys')">API Keys</button>
+      </nav>
+
+      <div class="keybar" id="keybar">
+        <span class="dot" id="keydot"></span>
+        <span id="keybar-text">API key မထည့်ရသေးပါ</span>
+        <button onclick="showView('keys')">Keys ဖွင့်မည်</button>
+      </div>
+
+      <!-- ================= STUDIO ================= -->
+      <section class="view on" id="view-studio">
+        <h1>စာသားကို သဘာဝကျတဲ့<br/>အသံအဖြစ် ပြောင်းပါ</h1>
+        <p class="lede">Model: <b>Gemini 3.8 Flash TTS</b> (gemini-3.8-flash-tts) — Speaker ၂ ယောက်အထိ dialog ရေးပြီး အသံထုတ်နိုင်သည်။</p>
+
+        <div class="cards">
+          <button class="xcard dashed" onclick="newDialog()">
+            <span class="ic">+</span>
+            <span class="t">Dialog အသစ် ဖန်တီးမည်</span>
+          </button>
+          <button class="xcard" onclick="loadTemplate()">
+            <span class="ic">🎧</span>
+            <span class="t">The Everyday Assistant</span>
+            <span class="d">A helpful and professional persona — နမူနာ dialog ပုံစံ</span>
+          </button>
+        </div>
+
+        <h2 class="sec">စကားပိုဒ်များ <small>Speaker ရွေး၊ Style ရွေး၊ &lt;laugh&gt; လို tag တွေ ထည့်နိုင်သည်</small></h2>
+        <div id="blocks"></div>
+        <button class="addblock" onclick="addBlock()">+ Add speech block</button>
+
+        <div class="panel">
+          <h3>Run settings</h3>
+          <div class="modelcard">
+            <div class="mn">Gemini 3.8 Flash TTS</div>
+            <div class="mid">gemini-3.8-flash-tts</div>
+            <div class="md">Flagship TTS model for Voice Design and dual-speaker screenplay control. Prompt custom vocal personas, direct line-by-line delivery, and add vocal bursts.</div>
+          </div>
+
+          <h3 style="margin-top:18px;">Model settings</h3>
+          <label for="temp" style="font-size:14.5px; color:var(--sub);">Temperature</label>
+          <div class="temprow">
+            <input type="range" id="temp" min="0" max="2" step="0.05" value="1" oninput="tempSync(this.value)" />
+            <input type="number" id="tempnum" min="0" max="2" step="0.05" value="1" onchange="tempSync(this.value)" />
+          </div>
+
+          <h3 style="margin-top:18px;">Speaker settings</h3>
+          <div class="spkrow">
+            <button class="spkcard" onclick="pickVoiceFor(1)">
+              <span class="vn"><span style="color:var(--text); font-size:16px;" id="sp1-name">Fola</span><span>Speaker 1</span></span>
+              <span class="vd" id="sp1-desc">Clear and friendly. · Medium pitch</span>
+            </button>
+            <button class="spkcard" onclick="pickVoiceFor(2)">
+              <span class="vn"><span style="color:var(--text); font-size:16px;" id="sp2-name">Kore</span><span>Speaker 2</span></span>
+              <span class="vd" id="sp2-desc">Firm</span>
+            </button>
+          </div>
+          <p class="hint" style="color:var(--sub); font-size:13px; margin:10px 0 0;">Speaker card ကို နှိပ်ရင် အသံစာကြည့်တိုက်ကနေ အသံပြောင်းရွေးနိုင်သည်။</p>
+        </div>
+
+        <div class="status" id="run-status"></div>
+
+        <div class="result" id="result">
+          <b>ထွက်လာတဲ့ အသံ</b>
+          <audio id="result-audio" controls preload="metadata"></audio>
+          <div>
+            <a class="dlbtn" id="result-dl" href="#" download="gemini-speech.wav">⬇ WAV ဒေါင်းလုဒ်</a>
+          </div>
+          <div class="hist" id="history-wrap" style="display:none;">
+            <b style="font-size:14.5px;">ဒီ session မှာ ထုတ်ခဲ့တာများ</b>
+            <div id="history"></div>
+          </div>
+        </div>
+
+        <div class="runbar">
+          <span class="chars" id="charcount">0 / 4,096 လုံး</span>
+          <button class="runbtn go" id="runbtn" onclick="runGenerate()">Run</button>
+        </div>
+      </section>
+
+      <!-- ================= VOICES ================= -->
+      <section class="view" id="view-voices">
+        <h1 style="font-size:28px;">Speaker settings</h1>
+        <div class="currentvoice">
+          <div style="flex:1; min-width:0;">
+            <div class="cv-t">Current voice — <span id="cv-spk">Speaker 1</span></div>
+            <div class="cv-n" id="cv-name">Fola</div>
+          </div>
+          <button class="iconbtn" id="cv-play" title="နမူနာ နားထောင်မည်" onclick="previewVoice(currentTargetVoice())">▶</button>
+        </div>
+
+        <div class="searchrow">
+          <div class="searchbox">
+            <span style="color:var(--faint);">🔍</span>
+            <input type="search" id="vsearch" placeholder="Search 2,000+ voices" oninput="renderVoices()" />
+          </div>
+          <button class="newvoicebtn" onclick="showView('newvoice')">+ New voice</button>
+        </div>
+
+        <div class="filters">
+          <select id="f-lang" onchange="renderVoices()"><option value="">Language</option></select>
+          <select id="f-gender" onchange="renderVoices()">
+            <option value="">Gender</option><option value="male">Male</option><option value="female">Female</option><option value="neutral">Neutral</option>
+          </select>
+          <select id="f-pitch" onchange="renderVoices()">
+            <option value="">Pitch</option>
+            <option value="low">Low</option><option value="medium-low">Medium-low</option>
+            <option value="medium">Medium</option><option value="medium-high">Medium-high</option>
+            <option value="high">High</option><option value="very high">Very high</option>
+          </select>
+          <select id="f-style" onchange="renderVoices()"><option value="">Style</option></select>
+          <select id="f-use" onchange="renderVoices()"><option value="">Use case</option></select>
+        </div>
+
+        <div class="targetrow">
+          <span>ရွေးထားတဲ့ အသံကို ထည့်ပေးမည့်သူ:</span>
+          <button class="tg on1" id="tg1" onclick="setTarget(1)">Speaker 1</button>
+          <button class="tg" id="tg2" onclick="setTarget(2)">Speaker 2</button>
+          <button class="ghostbtn" id="libload" onclick="loadLibrary(true)">API မှ စာကြည့်တိုက် ဆွဲယူမည်</button>
+        </div>
+        <p class="hint" id="lib-status" style="color:var(--sub); font-size:13px;">Built-in အသံများ ပြထားသည်။ Key ထည့်ပြီး ဆွဲယူရင် သင့် project ရဲ့ အသံ 2,000+ စာကြည့်တိုက် ပေါ်လာမည်။</p>
+
+        <div id="voice-groups"></div>
+      </section>
+
+      <!-- ================= NEW VOICE ================= -->
+      <section class="view" id="view-newvoice">
+        <h1 style="font-size:28px;">အသံအသစ် ဖန်တီးမည်</h1>
+        <p class="lede">စာသားနဲ့ ဖော်ပြရုံနဲ့ အသံအသစ် တစ်ခု ဖန်တီးပေးသည် (Voice Design)။ ထွက်လာတဲ့ <b>voice_… ID</b> ကို Speaker အဖြစ် ပြန်သုံးနိုင်သည်။ Project တစ်ခုလျှင် အသံ ၂၀၀ အထိ၊ သက်တမ်း ၁ နှစ်။</p>
+
+        <div class="cards" style="margin-bottom:18px;">
+          <button class="xcard dashed" onclick="fillDetective()">
+            <span class="ic">+</span>
+            <span class="t">Create new voice</span>
+          </button>
+          <button class="xcard" onclick="fillDetective()">
+            <span class="ic">🕵</span>
+            <span class="t">The Grizzled Detective</span>
+            <span class="d">Low, gravelly, world-weary noir narration</span>
+          </button>
+        </div>
+
+        <div class="field">
+          <label for="nv-name">အသံ နာမည်</label>
+          <input type="text" id="nv-name" placeholder="ဥပမာ — Warm Narrator" />
+        </div>
+        <div class="field">
+          <label for="nv-prompt">အသံ ဖော်ပြချက် (၁–၂ ကြောင်း)</label>
+          <textarea id="nv-prompt" rows="3" placeholder="ဥပမာ — A warm, friendly young Burmese female narrator with clear pacing and a gentle smile in her voice."></textarea>
+          <div class="hint">အသက်၊ ကျား/မ၊ လေယူလေသိမ်း၊ အသံနေဟန် တွေ ထည့်ရေးရင် ပိုတိကျသည်။</div>
+        </div>
+        <button class="primarybtn" id="nv-create" onclick="createVoice()">အသံ ဖန်တီးမည်</button>
+        <div class="status" id="nv-status"></div>
+        <div class="result" id="nv-result">
+          <b>နမူနာ အသံ</b>
+          <audio id="nv-audio" controls preload="metadata"></audio>
+          <div class="ht" id="nv-id" style="font-size:13.5px; color:var(--sub); word-break:break-all;"></div>
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="ghostbtn" onclick="assignCreated(1)">Speaker 1 အဖြစ် သုံးမည်</button>
+            <button class="ghostbtn" onclick="assignCreated(2)">Speaker 2 အဖြစ် သုံးမည်</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= KEYS ================= -->
+      <section class="view" id="view-keys">
+        <h1 style="font-size:28px;">API Keys</h1>
+        <p class="lede">Google AI Studio က key တွေ အများကြီး ထည့်ထားနိုင်သည်။ Key တစ်ခု quota ပြည့် / rate-limit / မမှန်ရင် နောက် key ကို <b>အလိုအလျောက် ပြောင်းသုံး</b>ပေးမည်။ Key အသစ်ကို <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> မှာ အခမဲ့ ယူနိုင်သည်။</p>
+
+        <div class="field">
+          <label for="keys-input">Key များ ထည့်ရန် (တစ်ကြောင်း တစ်ခု)</label>
+          <textarea id="keys-input" rows="4" placeholder="AIza…&#10;AIza…&#10;AIza…" autocomplete="off" spellcheck="false"></textarea>
+          <div class="hint">Paste လုပ်ပြီး ခလုတ်နှိပ်ရုံပဲ — ထပ်နေတဲ့ key တွေ အလိုအလျောက် ဖယ်ပေးမည်။</div>
+        </div>
+        <button class="primarybtn" onclick="addKeys()">Key များ ထည့်မည်</button>
+        <button class="ghostbtn" onclick="testAllKeys()">အားလုံး Test လုပ်မည်</button>
+
+        <h2 class="sec">သိမ်းထားတဲ့ Key များ <small id="keys-count"></small></h2>
+        <div id="keys-list"></div>
+        <div class="empty" id="keys-empty">Key မရှိသေးပါ။ အပေါ်မှာ ထည့်ပါ။</div>
+
+        <div class="note">Key တွေကို ဒီဖုန်းရဲ့ browser (localStorage) ထဲမှာပဲ သိမ်းထားသည် — တခြား server ကို မပို့ပါ။ သုံးတဲ့အခါ Google Gemini API ဆီကိုပဲ တိုက်ရိုက် ပို့သည်။ Browser data ရှင်းလိုက်ရင် key တွေ ပျက်သွားမည်။</div>
+      </section>
+
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    'use strict';
+    var API = 'https://generativelanguage.googleapis.com/v1beta';
+    var MODEL = 'gemini-3.8-flash-tts';
+    var LS_KEYS = 'gss_keys_v1', LS_ACTIVE = 'gss_active_v1';
+
+    /* ================= data ================= */
+    var PREBUILT = [
+      ['Zephyr','Bright'],['Puck','Upbeat'],['Charon','Informative'],['Kore','Firm'],
+      ['Fenrir','Excitable'],['Leda','Youthful'],['Orus','Firm'],['Aoede','Breezy'],
+      ['Callirrhoe','Easy-going'],['Autonoe','Bright'],['Enceladus','Breathy'],['Iapetus','Clear'],
+      ['Umbriel','Easy-going'],['Algieba','Smooth'],['Despina','Smooth'],['Erinome','Clear'],
+      ['Algenib','Gravelly'],['Rasalgethi','Informative'],['Laomedeia','Upbeat'],['Achernar','Soft'],
+      ['Alnilam','Firm'],['Schedar','Even'],['Gacrux','Mature'],['Pulcherrima','Forward'],
+      ['Achird','Friendly'],['Zubenelgenubi','Casual'],['Vindemiatrix','Gentle'],['Sadachbia','Lively'],
+      ['Sadaltager','Knowledgeable'],['Sulafat','Warm']
+    ];
+    var PREBUILT_SET = {};
+    PREBUILT.forEach(function(p){ PREBUILT_SET[p[0]] = p[1]; });
+
+    /* Voices from the AI Studio library screenshots (name, description, pitch, group) */
+    var SHOT_VOICES = [
+      { id:'Fola', name:'Fola', desc:'Clear and friendly.', pitch:'medium', group:'Library' },
+      { id:'Bodi', name:'Bodi', desc:'Quiet and intimate.', pitch:'low', group:'Tutor' },
+      { id:'Lumi', name:'Lumi', desc:'Warm and approachable.', pitch:'low', group:'Tutor' },
+      { id:'Sola', name:'Sola', desc:'Gentle and relaxed.', pitch:'very high', group:'Tutor' },
+      { id:'Koda', name:'Koda', desc:'Direct and helpful.', pitch:'medium-low', group:'Commercial Voiceover' },
+      { id:'Nika', name:'Nika', desc:'Warm and approachable.', pitch:'medium', group:'Commercial Voiceover' },
+      { id:'Tavi', name:'Tavi', desc:'Quiet and intimate.', pitch:'medium-high', group:'Commercial Voiceover' }
+    ];
+
+    var STYLES = [
+      ['', 'Style — ပုံမှန်'],
+      ['cheerful and friendly', 'ပျော်ရွှင် ဖော်ရွေ'],
+      ['calm and soothing', 'အေးဆေး နှစ်သိမ့်'],
+      ['warm storyteller', 'နွေးထွေးတဲ့ ပုံပြင်ဆရာ'],
+      ['confident professional narrator', 'ယုံကြည်မှုရှိတဲ့ ကြေညာသူ'],
+      ['excited and energetic', 'စိတ်လှုပ်ရှား တက်ကြွ'],
+      ['serious and formal', 'တည်ကြည် ရုံးသုံး'],
+      ['sad and emotional', 'ဝမ်းနည်း စိတ်ထိခိုက်'],
+      ['soft whisper', 'တိုးတိုးလေး'],
+      ['dramatic and theatrical', 'ဒရမ်မာ ဆန်ဆန်']
+    ];
+    var TAGS = ['<laugh>','<chuckle>','<gasp>','<sigh>','<groan>','<yawn>','<cough>','<sob>'];
+
+    /* ================= state ================= */
+    var speakers = {
+      1: { voice:'Fola', name:'Fola', desc:'Clear and friendly. · Medium pitch' },
+      2: { voice:'Kore', name:'Kore', desc:'Firm' }
+    };
+    var blocks = [ { speaker:1, style:'', text:'' } ];
+    var pickTarget = 1;
+    var libraryVoices = null;   /* null = not loaded from API yet */
+    var myVoices = [];          /* designed voices created this session */
+    var createdVoice = null;    /* last designed voice {id, name} */
+    var previewCache = {};      /* voice id -> blob URL */
+    var historyItems = [];
+    var audioCtx = null;
+
+    /* ================= keys (localStorage) ================= */
+    var apiKeys = [];
+    var activeIdx = 0;
+    function loadKeys(){
+      try {
+        var raw = localStorage.getItem(LS_KEYS);
+        if (raw) apiKeys = JSON.parse(raw) || [];
+        var a = parseInt(localStorage.getItem(LS_ACTIVE) || '0', 10);
+        activeIdx = isNaN(a) ? 0 : Math.min(Math.max(a, 0), Math.max(apiKeys.length - 1, 0));
+      } catch(e){ apiKeys = []; }
+    }
+    function saveKeys(){
+      try {
+        localStorage.setItem(LS_KEYS, JSON.stringify(apiKeys));
+        localStorage.setItem(LS_ACTIVE, String(activeIdx));
+      } catch(e){}
+      renderKeyBar(); renderKeysList();
+    }
+    function maskKey(k){
+      if (k.length <= 12) return k.slice(0,4) + '••••';
+      return k.slice(0,6) + '••••••' + k.slice(-4);
+    }
+    function renderKeyBar(){
+      var dot = document.getElementById('keydot');
+      var txt = document.getElementById('keybar-text');
+      if (!apiKeys.length){
+        dot.className = 'dot'; txt.textContent = 'API key မထည့်ရသေးပါ — အသံထုတ်ဖို့ key လိုသည်';
+        return;
+      }
+      var rec = apiKeys[activeIdx] || apiKeys[0];
+      dot.className = 'dot ' + (rec.st === 'ok' ? 'ok' : (rec.st ? 'bad' : ''));
+      txt.innerHTML = 'Key <b>' + apiKeys.length + '</b> ခု ရှိသည် · သုံးနေတာ: <b>#' + (activeIdx + 1) + '</b> (' + maskKey(rec.k) + ')';
+    }
+    function renderKeysList(){
+      var list = document.getElementById('keys-list');
+      document.getElementById('keys-empty').style.display = apiKeys.length ? 'none' : 'block';
+      document.getElementById('keys-count').textContent = apiKeys.length ? '(' + apiKeys.length + ' ခု)' : '';
+      list.innerHTML = apiKeys.map(function(rec, i){
+        var st = rec.st === 'ok' ? '<span class="kstat ok">အဆင်ပြေ</span>'
+               : rec.st === 'quota' ? '<span class="kstat quota">Quota ပြည့် / Rate limit</span>'
+               : rec.st === 'bad' ? '<span class="kstat bad">Key မမှန်</span>'
+               : '<span class="kstat">မစမ်းရသေး</span>';
+        return '<div class="keyrow' + (i === activeIdx ? ' active' : '') + '">' +
+          '<div class="kmask">#' + (i + 1) + ' · ' + maskKey(rec.k) + '</div>' +
+          '<div class="kmeta">' + st +
+            '<span>✓ ' + (rec.ok || 0) + ' ကြိမ် အောင်မြင်</span>' +
+            '<span>✗ ' + (rec.fail || 0) + ' ကြိမ် ပျက်</span>' +
+            (i === activeIdx ? '<span style="color:var(--accent); font-weight:700;">သုံးနေသည်</span>' : '') +
+          '</div>' +
+          '<div class="kactions">' +
+            '<button class="use" onclick="useKey(' + i + ')">သုံးမည်</button>' +
+            '<button onclick="testKey(' + i + ',this)">Test</button>' +
+            '<button class="del" onclick="deleteKey(' + i + ')">ဖျက်မည်</button>' +
+          '</div></div>';
+      }).join('');
+    }
+    function addKeys(){
+      var ta = document.getElementById('keys-input');
+      var lines = ta.value.split(/[\r\n]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+      var added = 0;
+      lines.forEach(function(k){
+        if (!apiKeys.some(function(r){ return r.k === k; })){
+          apiKeys.push({ k:k, ok:0, fail:0, st:'' }); added++;
+        }
+      });
+      if (!added){ toast('Key အသစ် မပါပါ (ထပ်နေတာ / ဗလာ)'); return; }
+      ta.value = '';
+      saveKeys();
+      toast('Key ' + added + ' ခု ထည့်ပြီးပြီ');
+    }
+    function useKey(i){ activeIdx = i; saveKeys(); toast('Key #' + (i + 1) + ' ကို သုံးနေသည်'); }
+    function deleteKey(i){
+      apiKeys.splice(i, 1);
+      if (activeIdx >= apiKeys.length) activeIdx = Math.max(apiKeys.length - 1, 0);
+      saveKeys(); toast('Key ဖျက်ပြီးပြီ');
+    }
+    function keyStatusFor(status, body){
+      var st = body && body.error && body.error.status;
+      if (status === 429 || st === 'RESOURCE_EXHAUSTED') return 'quota';
+      if (status === 400 || status === 401 || status === 403) return 'bad';
+      return 'bad';
+    }
+    async function testKey(i, btn){
+      var rec = apiKeys[i]; if (!rec) return;
+      if (btn){ btn.disabled = true; btn.textContent = 'စမ်းနေသည်…'; }
+      try {
+        var resp = await fetch(API + '/models/' + MODEL, {
+          headers: { 'x-goog-api-key': rec.k }
+        });
+        if (resp.ok){ rec.st = 'ok'; rec.ok = (rec.ok || 0) + 1; toast('Key #' + (i + 1) + ' အဆင်ပြေသည် ✓'); }
+        else {
+          var body = null; try { body = await resp.json(); } catch(e){}
+          rec.st = keyStatusFor(resp.status, body); rec.fail = (rec.fail || 0) + 1;
+          toast('Key #' + (i + 1) + ' မရပါ — ' + ((body && body.error && body.error.message) || ('HTTP ' + resp.status)));
+        }
+      } catch(e){
+        rec.fail = (rec.fail || 0) + 1; toast('Network မရပါ — internet စစ်ပါ');
+      }
+      saveKeys();
+      if (btn){ btn.disabled = false; btn.textContent = 'Test'; }
+    }
+    async function testAllKeys(){
+      for (var i = 0; i < apiKeys.length; i++){ await testKey(i, null); }
+      if (apiKeys.length) toast('Key အားလုံး စမ်းပြီးပြီ');
+    }
+
+    /* ============ API call with automatic key rotation ============ */
+    async function apiFetch(path, opts){
+      if (!apiKeys.length) throw { message: 'API key မထည့်ရသေးပါ — Keys tab မှာ အရင် ထည့်ပါ' };
+      var order = [];
+      for (var i = 0; i < apiKeys.length; i++) order.push((activeIdx + i) % apiKeys.length);
+      var lastErr = { message: 'Key အားလုံး မရပါ' };
+      for (var oi = 0; oi < order.length; oi++){
+        var idx = order[oi], rec = apiKeys[idx];
+        var o = { method: (opts && opts.method) || 'GET', headers: { 'x-goog-api-key': rec.k } };
+        if (opts && opts.body){ o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(opts.body); }
+        var resp;
+        try { resp = await fetch(API + path, o); }
+        catch(e){ rec.fail = (rec.fail || 0) + 1; saveKeys(); lastErr = { message: 'Network မရပါ — internet စစ်ပါ' }; continue; }
+        if (resp.ok){
+          rec.ok = (rec.ok || 0) + 1; rec.st = 'ok';
+          if (idx !== activeIdx){ activeIdx = idx; toast('Key #' + (idx + 1) + ' ကို ပြောင်းသုံးလိုက်သည်'); }
+          saveKeys();
+          return resp;
+        }
+        var body = null; try { body = await resp.json(); } catch(e){}
+        rec.fail = (rec.fail || 0) + 1;
+        rec.st = keyStatusFor(resp.status, body);
+        saveKeys();
+        lastErr = { status: resp.status, message: (body && body.error && body.error.message) || ('HTTP ' + resp.status) };
+        if (oi < order.length - 1){
+          toast('Key #' + (idx + 1) + ' ' + (rec.st === 'quota' ? 'quota ပြည့်' : 'မရ') + ' — နောက် key ပြောင်းစမ်းနေသည်');
+        }
+      }
+      throw lastErr;
+    }
+
+    /* ================= audio helpers ================= */
+    function b64ToBytes(b64){
+      var bin = atob(b64), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return arr;
+    }
+    function isWav(bytes){
+      return bytes.length > 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+    }
+    function pcmToWavBlob(bytes, rate){
+      var buf = new ArrayBuffer(44 + bytes.length), v = new DataView(buf);
+      function ws(off, s){ for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+      ws(0, 'RIFF'); v.setUint32(4, 36 + bytes.length, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true);
+      v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, bytes.length, true);
+      var out = new Uint8Array(buf); out.set(bytes, 44);
+      return new Blob([out], { type: 'audio/wav' });
+    }
+    async function segmentToBuffer(seg){
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (isWav(seg.bytes)){
+        return await audioCtx.decodeAudioData(seg.bytes.buffer.slice(0));
+      }
+      var rate = 24000, m = /rate=(\d+)/.exec(seg.mime || '');
+      if (m) rate = parseInt(m[1], 10);
+      var n = Math.floor(seg.bytes.length / 2);
+      var buffer = audioCtx.createBuffer(1, n, rate);
+      var ch = buffer.getChannelData(0);
+      var dv = new DataView(seg.bytes.buffer, seg.bytes.byteOffset, seg.bytes.byteLength);
+      for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
+      return buffer;
+    }
+    function buffersToWavBlob(buffers){
+      var rate = buffers[0].sampleRate, total = 0;
+      buffers.forEach(function(b){ total += b.length; });
+      var pcm = new Int16Array(total), off = 0;
+      buffers.forEach(function(b){
+        var ch = b.getChannelData(0);
+        for (var i = 0; i < b.length; i++){
+          var s = Math.max(-1, Math.min(1, ch[i]));
+          pcm[off + i] = s < 0 ? s * 32768 : s * 32767;
+        }
+        off += b.length;
+      });
+      return pcmToWavBlob(new Uint8Array(pcm.buffer), rate);
+    }
+    </script>
+
+    <script>
+    'use strict';
+    /* ================= UI helpers ================= */
+    var toastTimer = null;
+    function toast(msg){
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+    }
+    function setStatus(id, msg, kind){
+      var el = document.getElementById(id);
+      el.className = 'status show ' + (kind || 'info');
+      el.innerHTML = msg;
+    }
+    function hideStatus(id){ document.getElementById(id).className = 'status'; }
+    function esc(s){
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+        return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+      });
+    }
+    function showView(name){
+      ['studio','voices','newvoice','keys'].forEach(function(v){
+        document.getElementById('view-' + v).classList.toggle('on', v === name);
+        document.getElementById('tab-' + v).classList.toggle('on', v === name);
+      });
+      window.scrollTo({ top: 0 });
+      if (name === 'voices' && !libraryVoices && apiKeys.length) loadLibrary(false);
+    }
+
+    /* ================= speech blocks ================= */
+    function renderBlocks(){
+      var wrap = document.getElementById('blocks');
+      wrap.innerHTML = blocks.map(function(b, i){
+        var sp = speakers[b.speaker];
+        var styleOpts = STYLES.map(function(s){
+          return '<option value="' + esc(s[0]) + '"' + (b.style === s[0] ? ' selected' : '') + '>' + esc(s[1]) + '</option>';
+        }).join('');
+        return '<div class="block" data-i="' + i + '">' +
+          '<div class="block-head">' +
+            '<button class="spbtn" onclick="pickVoiceFor(' + b.speaker + '); setBlockSpeakerMenu(' + i + ')">' +
+              '<span class="sdot" style="background:' + (b.speaker === 1 ? 'var(--sp1)' : 'var(--sp2)') + '"></span>' +
+              'Speaker ' + b.speaker + ' · ' + esc(sp.name) + ' <span class="chev">▾</span></button>' +
+            '<select class="stylesel" onchange="setBlockStyle(' + i + ', this.value)">' + styleOpts + '</select>' +
+            '<span class="block-tools">' +
+              '<button class="toolbtn" onclick="toggleTags(' + i + ', this)">&lt; &gt; + Expression</button>' +
+              '<button class="iconbtn" title="ဒီပိုဒ်ချည်း နားထောင်မည်" onclick="previewBlock(' + i + ', this)">▶</button>' +
+              '<button class="iconbtn" title="မိုက်နဲ့ ပြောထည့်မည်" onclick="micInput(' + i + ', this)">🎙</button>' +
+              (blocks.length > 1 ? '<button class="iconbtn plain" title="ဖျက်မည်" onclick="removeBlock(' + i + ')">✕</button>' : '') +
+            '</span>' +
+          '</div>' +
+          '<div class="tagmenu" id="tags-' + i + '">' +
+            TAGS.map(function(t){ return '<button class="tagchip" onclick="insertTag(' + i + ', \'' + t + '\')">' + esc(t) + '</button>'; }).join('') +
+          '</div>' +
+          '<textarea id="ta-' + i + '" rows="3" placeholder="ဖတ်ပြမည့် စာသား ရိုက်ထည့်ပါ — \'<\' ရိုက်ပြီး tag ထည့်နိုင်သည်" oninput="setBlockText(' + i + ', this.value)">' + esc(b.text) + '</textarea>' +
+          '<div class="block-foot"><span>Speaker ' + b.speaker + '</span><span>' + b.text.length + ' လုံး</span></div>' +
+        '</div>';
+      }).join('');
+      updateCharCount();
+    }
+    var pendingSpeakerBlock = -1;
+    function setBlockSpeakerMenu(i){ pendingSpeakerBlock = i; }
+    function pickVoiceFor(sp){
+      pickTarget = sp; setTarget(sp); showView('voices');
+    }
+    function setBlockSpeaker(i, sp){ blocks[i].speaker = sp; renderBlocks(); }
+    function setBlockStyle(i, v){ blocks[i].style = v; }
+    function setBlockText(i, v){ blocks[i].text = v; updateCharCount();
+      var foot = document.querySelector('.block[data-i="' + i + '"] .block-foot span:last-child');
+      if (foot) foot.textContent = v.length + ' လုံး';
+    }
+    function addBlock(){
+      var last = blocks.length ? blocks[blocks.length - 1].speaker : 1;
+      blocks.push({ speaker: last === 1 ? 2 : 1, style:'', text:'' });
+      renderBlocks();
+      var ta = document.getElementById('ta-' + (blocks.length - 1));
+      if (ta) ta.focus();
+    }
+    function removeBlock(i){ blocks.splice(i, 1); renderBlocks(); }
+    function toggleTags(i, btn){
+      document.getElementById('tags-' + i).classList.toggle('open');
+    }
+    function insertTag(i, tag){
+      var ta = document.getElementById('ta-' + i);
+      var s = ta.selectionStart || ta.value.length, e = ta.selectionEnd || ta.value.length;
+      ta.value = ta.value.slice(0, s) + tag + ' ' + ta.value.slice(e);
+      blocks[i].text = ta.value;
+      ta.focus(); ta.selectionStart = ta.selectionEnd = s + tag.length + 1;
+      updateCharCount();
+      var foot = document.querySelector('.block[data-i="' + i + '"] .block-foot span:last-child');
+      if (foot) foot.textContent = ta.value.length + ' လုံး';
+    }
+    function micInput(i, btn){
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR){ toast('ဒီ browser မှာ မိုက် စာရိုက်တာ မရပါ'); return; }
+      var rec = new SR();
+      rec.lang = 'my-MM'; rec.interimResults = false;
+      btn.textContent = '⏺';
+      rec.onresult = function(ev){
+        var t = ev.results[0][0].transcript;
+        var ta = document.getElementById('ta-' + i);
+        ta.value = (ta.value ? ta.value + ' ' : '') + t;
+        blocks[i].text = ta.value; updateCharCount();
+      };
+      rec.onend = function(){ btn.textContent = '🎙'; };
+      rec.onerror = function(){ btn.textContent = '🎙'; toast('မိုက် မရပါ'); };
+      try { rec.start(); } catch(e){ btn.textContent = '🎙'; }
+    }
+    function updateCharCount(){
+      var total = blocks.reduce(function(a, b){ return a + b.text.length; }, 0);
+      var el = document.getElementById('charcount');
+      el.textContent = total.toLocaleString() + ' / 4,096 လုံး';
+      el.style.color = total > 4096 ? 'var(--bad)' : '';
+    }
+    function newDialog(){
+      blocks = [ { speaker:1, style:'', text:'' } ];
+      renderBlocks(); hideStatus('run-status');
+      document.getElementById('result').classList.remove('show');
+      toast('Dialog အသစ် စပြီးပြီ');
+    }
+    function loadTemplate(){
+      blocks = [
+        { speaker:1, style:'cheerful and friendly', text:'<gasp> That\'s a great idea! <laugh>' },
+        { speaker:2, style:'calm and soothing', text:'ဟုတ်ကဲ့၊ ကျွန်တော် ကူညီပေးပါမယ်။ ဘာတွေ လုပ်ပေးရမလဲ ပြောပြပါ။' }
+      ];
+      renderBlocks(); toast('နမူနာ dialog ထည့်ပြီးပြီ');
+    }
+    function tempSync(v){
+      v = Math.max(0, Math.min(2, parseFloat(v) || 0));
+      document.getElementById('temp').value = v;
+      document.getElementById('tempnum').value = v;
+    }
+
+    /* ================= generation ================= */
+    function voiceConfigFor(voiceId){
+      if (PREBUILT_SET[voiceId]) return { prebuiltVoiceConfig: { voiceName: voiceId } };
+      return { voice: voiceId };
+    }
+    function buildRequest(blockList){
+      var usedSpeakers = [];
+      blockList.forEach(function(b){ if (usedSpeakers.indexOf(b.speaker) < 0) usedSpeakers.push(b.speaker); });
+      var parts = blockList.map(function(b){
+        var p = { text: b.text };
+        var meta = {};
+        if (usedSpeakers.length > 1) meta.speaker = 'Speaker ' + b.speaker;
+        if (b.style) meta.style = b.style;
+        if (Object.keys(meta).length) p.speech_metadata = meta;
+        return p;
+      });
+      var speechConfig;
+      if (usedSpeakers.length > 1){
+        speechConfig = { multiSpeakerVoiceConfig: { speakerVoiceConfigs: usedSpeakers.map(function(s){
+          return { speaker: 'Speaker ' + s, voiceConfig: voiceConfigFor(speakers[s].voice) };
+        }) } };
+      } else {
+        speechConfig = { voiceConfig: voiceConfigFor(speakers[usedSpeakers[0]].voice) };
+      }
+      var temp = parseFloat(document.getElementById('temp').value) || 0;
+      return {
+        contents: [ { role: 'user', parts: parts } ],
+        generationConfig: {
+          temperature: temp,
+          responseModalities: ['AUDIO'],
+          speechConfig: speechConfig
+        }
+      };
+    }
+    async function generateAudio(blockList){
+      var resp = await apiFetch('/models/' + MODEL + ':generateContent', {
+        method: 'POST', body: buildRequest(blockList)
+      });
+      var data = await resp.json();
+      var parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+      var segs = [];
+      parts.forEach(function(p){
+        if (p.inlineData && p.inlineData.data){
+          segs.push({ mime: p.inlineData.mimeType || '', bytes: b64ToBytes(p.inlineData.data) });
+        }
+      });
+      if (!segs.length) throw { message: 'အသံ ပြန်မလာပါ — စာသား ပြန်စစ်ပြီး ထပ်စမ်းပါ' };
+      if (segs.length === 1 && isWav(segs[0].bytes)){
+        return new Blob([segs[0].bytes], { type: 'audio/wav' });
+      }
+      var buffers = [];
+      for (var i = 0; i < segs.length; i++) buffers.push(await segmentToBuffer(segs[i]));
+      return buffersToWavBlob(buffers);
+    }
+    async function runGenerate(){
+      var list = blocks.filter(function(b){ return b.text.trim(); });
+      if (!list.length){ toast('စာသား အရင် ရိုက်ထည့်ပါ'); return; }
+      var btn = document.getElementById('runbtn');
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span>ထုတ်နေသည်…';
+      setStatus('run-status', 'Gemini 3.8 Flash TTS နဲ့ အသံထုတ်နေသည်…', 'info');
+      try {
+        var blob = await generateAudio(list);
+        var url = URL.createObjectURL(blob);
+        var audio = document.getElementById('result-audio');
+        audio.src = url;
+        var dl = document.getElementById('result-dl');
+        dl.href = url;
+        document.getElementById('result').classList.add('show');
+        historyItems.unshift({ url: url, text: list.map(function(b){ return b.text; }).join(' / ') });
+        renderHistory();
+        setStatus('run-status', 'ရပါပြီ ✓ အောက်မှာ နားထောင်ပြီး WAV ဒေါင်းလုဒ် ဆွဲနိုင်သည်။', 'ok');
+        audio.play().catch(function(){});
+      } catch(e){
+        setStatus('run-status', 'မရပါ — ' + esc(e.message || 'error'), 'err');
+      }
+      btn.disabled = false; btn.textContent = 'Run';
+    }
+    function renderHistory(){
+      var wrap = document.getElementById('history-wrap');
+      wrap.style.display = historyItems.length ? 'block' : 'none';
+      document.getElementById('history').innerHTML = historyItems.map(function(h){
+        return '<div class="hitem"><div class="ht">' + esc(h.text) + '</div>' +
+          '<audio controls preload="metadata" src="' + h.url + '"></audio></div>';
+      }).join('');
+    }
+    async function previewBlock(i, btn){
+      var b = blocks[i];
+      if (!b.text.trim()){ toast('ဒီပိုဒ်မှာ စာသား မရှိသေးပါ'); return; }
+      btn.textContent = '⏳';
+      try {
+        var blob = await generateAudio([b]);
+        var a = new Audio(URL.createObjectURL(blob));
+        a.play().catch(function(){});
+      } catch(e){ toast('မရပါ — ' + (e.message || 'error')); }
+      btn.textContent = '▶';
+    }
+
+    /* ================= voices ================= */
+    function currentTargetVoice(){ return speakers[pickTarget]; }
+    function setTarget(sp){
+      pickTarget = sp;
+      document.getElementById('tg1').className = 'tg' + (sp === 1 ? ' on1' : '');
+      document.getElementById('tg2').className = 'tg' + (sp === 2 ? ' on2' : '');
+      document.getElementById('cv-spk').textContent = 'Speaker ' + sp;
+      document.getElementById('cv-name').textContent = speakers[sp].name;
+    }
+    function allVoices(){
+      var list = [];
+      myVoices.forEach(function(v){ list.push(v); });
+      if (libraryVoices) libraryVoices.forEach(function(v){ list.push(v); });
+      SHOT_VOICES.forEach(function(v){
+        list.push({ id: v.id, name: v.name, desc: v.desc, pitch: v.pitch, group: v.group, lib: true });
+      });
+      PREBUILT.forEach(function(p){
+        list.push({ id: p[0], name: p[0], desc: p[1], group: 'Studio Voices (30)', prebuilt: true });
+      });
+      return list;
+    }
+    function voiceMatches(v){
+      var q = (document.getElementById('vsearch').value || '').toLowerCase();
+      if (q && (v.name + ' ' + (v.desc || '') + ' ' + v.id).toLowerCase().indexOf(q) < 0) return false;
+      var lang = document.getElementById('f-lang').value;
+      if (lang && v.lang && v.lang !== lang) return false;
+      var g = document.getElementById('f-gender').value;
+      if (g && v.gender !== g) return false;
+      var p = document.getElementById('f-pitch').value;
+      if (p && v.pitch !== p) return false;
+      var st = document.getElementById('f-style').value;
+      if (st && (v.desc || '').toLowerCase().indexOf(st.toLowerCase()) < 0) return false;
+      var u = document.getElementById('f-use').value;
+      if (u && v.group !== u) return false;
+      return true;
+    }
+    function renderVoices(){
+      var groups = {};
+      allVoices().forEach(function(v){
+        if (!voiceMatches(v)) return;
+        (groups[v.group] = groups[v.group] || []).push(v);
+      });
+      var order = Object.keys(groups).sort(function(a, b){
+        var rank = function(g){ return g === 'ကျွန်ုပ်၏ အသံများ' ? 0 : g === 'Library' ? 1 : g.indexOf('Studio') === 0 ? 9 : 5; };
+        return rank(a) - rank(b);
+      });
+      var html = order.map(function(g){
+        return '<div class="vgroup"><div class="vgroup-head"><h3>' + esc(g) + '</h3><span>' + groups[g].length + ' ခု</span></div>' +
+          groups[g].map(function(v){
+            var usedBy = [];
+            if (speakers[1].voice === v.id) usedBy.push('<span class="badge s1">Speaker 1</span>');
+            if (speakers[2].voice === v.id) usedBy.push('<span class="badge s2">Speaker 2</span>');
+            var meta = [v.desc, v.pitch ? (v.pitch + ' pitch') : '', v.gender || ''].filter(Boolean).join(' · ');
+            return '<div class="vrow" onclick="selectVoice(\'' + esc(v.id) + '\')">' +
+              '<div class="vinfo"><div class="vname">' + esc(v.name) + ' ' + usedBy.join(' ') + '</div>' +
+              '<div class="vdesc">' + esc(meta) + '</div></div>' +
+              '<button class="play" title="နမူနာ" onclick="event.stopPropagation(); previewVoiceById(\'' + esc(v.id) + '\', this)">▶</button></div>';
+          }).join('') + '</div>';
+      }).join('');
+      document.getElementById('voice-groups').innerHTML =
+        html || '<div class="empty">ရှာတဲ့ အသံ မတွေ့ပါ — filter တွေ ပြန်ရှင်းကြည့်ပါ။</div>';
+      /* refresh filter options */
+      var styles = {}, uses = {}, langs = {};
+      allVoices().forEach(function(v){
+        if (v.group) uses[v.group] = 1;
+        if (v.lang) langs[v.lang] = 1;
+        (v.desc || '').split(/[.,·]/).forEach(function(w){
+          w = w.trim(); if (w) styles[w] = 1;
+        });
+      });
+      fillSelect('f-style', Object.keys(styles).sort(), 'Style');
+      fillSelect('f-use', Object.keys(uses).sort(), 'Use case');
+      fillSelect('f-lang', Object.keys(langs).sort(), 'Language');
+    }
+    function fillSelect(id, opts, first){
+      var sel = document.getElementById(id), cur = sel.value;
+      sel.innerHTML = '<option value="">' + first + '</option>' + opts.map(function(o){
+        return '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>';
+      }).join('');
+    }
+    function findVoice(id){
+      var all = allVoices();
+      for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
+      return { id: id, name: id, desc: '' };
+    }
+    function selectVoice(id){
+      var v = findVoice(id);
+      speakers[pickTarget] = { voice: v.id, name: v.name, desc: [v.desc, v.pitch ? (v.pitch + ' pitch') : ''].filter(Boolean).join(' · ') };
+      syncSpeakerCards();
+      if (pendingSpeakerBlock >= 0){ blocks[pendingSpeakerBlock].speaker = pickTarget; pendingSpeakerBlock = -1; }
+      renderBlocks(); renderVoices(); setTarget(pickTarget);
+      toast('Speaker ' + pickTarget + ' အတွက် "' + v.name + '" ရွေးပြီးပြီ');
+    }
+    function syncSpeakerCards(){
+      [1, 2].forEach(function(s){
+        document.getElementById('sp' + s + '-name').textContent = speakers[s].name;
+        document.getElementById('sp' + s + '-desc').textContent = speakers[s].desc || '';
+      });
+    }
+    async function previewVoiceById(id, btn){
+      if (previewCache[id]){ new Audio(previewCache[id]).play().catch(function(){}); return; }
+      if (btn) btn.textContent = '⏳';
+      try {
+        var sp = speakers[pickTarget].voice === id ? pickTarget : (speakers[1].voice === id ? 1 : 2);
+        var saved = speakers[sp].voice;
+        speakers[sp].voice = id;
+        var blob = await generateAudio([{ speaker: sp, style: '', text: 'မင်္ဂလာပါ။ ဒါက အသံနမူနာ ဖြစ်ပါတယ်။' }]);
+        speakers[sp].voice = saved;
+        var url = URL.createObjectURL(blob);
+        previewCache[id] = url;
+        new Audio(url).play().catch(function(){});
+      } catch(e){ toast('နမူနာ မရပါ — ' + (e.message || 'error')); }
+      if (btn) btn.textContent = '▶';
+    }
+    function previewVoice(v){ previewVoiceById(v.voice, document.getElementById('cv-play')); }
+
+    async function loadLibrary(manual){
+      var btn = document.getElementById('libload');
+      btn.disabled = true; btn.textContent = 'ဆွဲယူနေသည်…';
+      try {
+        var resp = await apiFetch('/voices?pageSize=1000');
+        var data = await resp.json();
+        var arr = data.voices || data.items || (Array.isArray(data) ? data : []);
+        var mine = [], lib = [];
+        arr.forEach(function(v){
+          var id = v.id || v.name;
+          if (!id) return;
+          var rec = {
+            id: String(id).replace(/^voices\//, ''),
+            name: v.display_name || v.displayName || String(id).replace(/^voices\//, ''),
+            desc: v.description || v.persona || '',
+            gender: (v.gender || '').toLowerCase(),
+            pitch: (v.pitch || '').toLowerCase(),
+            lang: v.language_code || v.languageCode || v.language || '',
+            group: 'Library'
+          };
+          var type = (v.type || '').toLowerCase();
+          if (type.indexOf('prompted') >= 0 || type.indexOf('replicated') >= 0 || type.indexOf('custom') >= 0){
+            rec.group = 'ကျွန်ုပ်၏ အသံများ'; mine.push(rec);
+          } else if (!PREBUILT_SET[rec.id]) { lib.push(rec); }
+        });
+        myVoices = mine.concat(myVoices.filter(function(mv){
+          return !mine.some(function(m){ return m.id === mv.id; });
+        }));
+        libraryVoices = lib;
+        document.getElementById('lib-status').textContent =
+          'API စာကြည့်တိုက်ကနေ အသံ ' + (mine.length + lib.length) + ' ခု ရသည် (သင့် project အတွက် ရနိုင်တာကိုပဲ ပြသည်)။';
+        renderVoices();
+        if (manual) toast('စာကြည့်တိုက် ဆွဲယူပြီးပြီ');
+      } catch(e){
+        document.getElementById('lib-status').textContent = 'စာကြည့်တိုက် ဆွဲမရပါ — ' + (e.message || 'error') + ' · Built-in အသံတွေ ဆက်ပြထားသည်။';
+        if (manual) toast('ဆွဲမရပါ — ' + (e.message || 'error'));
+      }
+      btn.disabled = false; btn.textContent = 'API မှ စာကြည့်တိုက် ဆွဲယူမည်';
+    }
+
+    /* ================= new voice (design) ================= */
+    function fillDetective(){
+      document.getElementById('nv-name').value = 'The Grizzled Detective';
+      document.getElementById('nv-prompt').value = 'A low, gravelly, world-weary male voice of a veteran noir detective, slow deliberate pacing, dry and cynical.';
+    }
+    async function createVoice(){
+      var name = document.getElementById('nv-name').value.trim();
+      var prompt = document.getElementById('nv-prompt').value.trim();
+      if (!prompt){ toast('အသံ ဖော်ပြချက် အရင် ရေးပါ'); return; }
+      if (!name) name = 'My Voice';
+      var btn = document.getElementById('nv-create');
+      btn.disabled = true; btn.textContent = 'ဖန်တီးနေသည်…';
+      setStatus('nv-status', 'Voice Design နဲ့ အသံအသစ် ဖန်တီးနေသည်…', 'info');
+      try {
+        var resp = await apiFetch('/voices', {
+          method: 'POST',
+          body: { store: true, voice: { model: MODEL, type: 'prompted', display_name: name, prompted: { input: prompt } } }
+        });
+        var data = await resp.json();
+        var id = data.id || (data.voice && data.voice.id) || '';
+        if (!id) throw { message: 'Voice ID ပြန်မလာပါ' };
+        createdVoice = { id: id, name: name };
+        myVoices.unshift({ id: id, name: name, desc: prompt, group: 'ကျွန်ုပ်၏ အသံများ' });
+        document.getElementById('nv-id').textContent = 'Voice ID: ' + id;
+        var sa = data.sample_audio || data.sampleAudio;
+        if (sa && sa.data){
+          var bytes = b64ToBytes(sa.data);
+          var blob = isWav(bytes) ? new Blob([bytes], { type: 'audio/wav' })
+                                  : pcmToWavBlob(bytes, 24000);
+          document.getElementById('nv-audio').src = URL.createObjectURL(blob);
+        }
+        document.getElementById('nv-result').classList.add('show');
+        setStatus('nv-status', 'ရပါပြီ ✓ "' + esc(name) + '" အသံ ဖန်တီးပြီးပြီ။ အောက်က နမူနာ နားထောင်ပြီး Speaker အဖြစ် သုံးနိုင်သည်။', 'ok');
+        renderVoices();
+      } catch(e){
+        setStatus('nv-status', 'မရပါ — ' + esc(e.message || 'error'), 'err');
+      }
+      btn.disabled = false; btn.textContent = 'အသံ ဖန်တီးမည်';
+    }
+    function assignCreated(sp){
+      if (!createdVoice){ toast('အသံ အရင် ဖန်တီးပါ'); return; }
+      speakers[sp] = { voice: createdVoice.id, name: createdVoice.name, desc: 'Designed voice' };
+      syncSpeakerCards(); renderBlocks();
+      toast('Speaker ' + sp + ' အဖြစ် သုံးလိုက်သည်');
+      showView('studio');
+    }
+
+    /* ================= init ================= */
+    loadKeys();
+    renderKeyBar(); renderKeysList();
+    renderBlocks(); renderVoices(); syncSpeakerCards(); setTarget(1);
+    </script>
+  </body>
+</html>
